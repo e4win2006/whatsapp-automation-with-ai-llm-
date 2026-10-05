@@ -148,23 +148,27 @@ export class AutomationEngine {
       }
 
       // Record Timeline Event: MESSAGE_RECEIVED
-      this.database.addTimelineEvent({
-        message_id: messageId,
-        contact_id: contactId,
-        stage: 'MESSAGE_RECEIVED',
-        description: `Message received via ${eventSource}`,
-        metadata: { fromMe, bodyLength: body.length, senderName }
-      });
+      try {
+        this.database.addTimelineEvent({
+          message_id: messageId,
+          contact_id: contactId,
+          stage: 'MESSAGE_RECEIVED',
+          description: `Message received via ${eventSource}`,
+          metadata: { fromMe, bodyLength: body.length, senderName }
+        });
 
-      // Initialize / Record State: RECEIVED
-      this.database.saveMessageProcessingState({
-        message_id: messageId,
-        contact_id: contactId,
-        canonical_phone_id: msg.whatsappPhoneId || (contactId.endsWith('@c.us') ? contactId : null),
-        event_source: eventSource,
-        received_at: msg.timestamp || Date.now(),
-        status: 'RECEIVED'
-      });
+        // Initialize / Record State: RECEIVED
+        this.database.saveMessageProcessingState({
+          message_id: messageId,
+          contact_id: contactId,
+          canonical_phone_id: msg.whatsappPhoneId || (contactId.endsWith('@c.us') ? contactId : null),
+          event_source: eventSource,
+          received_at: msg.timestamp || Date.now(),
+          status: 'RECEIVED'
+        });
+      } catch (stateErr: any) {
+        console.warn(`[STATE TRACKING WARN] Initial state save warning for ${messageId}:`, stateErr.message);
+      }
 
       // Filter empty messages and status broadcast / system messages
       const isVoiceMsg = msg.messageType === 'voice' || msg.raw?.type === 'ptt' || msg.raw?.type === 'audio' || Boolean(msg.audioData) || Boolean(msg.audioBuffer) || Boolean((msg as any).isVoice);

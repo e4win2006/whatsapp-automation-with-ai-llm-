@@ -586,8 +586,7 @@ export class JarvisDatabase {
           terminal_reason TEXT,
           boot_session_id TEXT NOT NULL,
           created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          FOREIGN KEY (contact_id) REFERENCES contacts(id)
+          updated_at INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_msg_state_contact_status ON message_processing_states(contact_id, status);
 
@@ -645,6 +644,42 @@ export class JarvisDatabase {
       `);
     } catch (e) {
       // Tables already exist
+    }
+
+    // Self-healing migration for existing databases with FK on message_processing_states
+    try {
+      const fkList = this.db.prepare(`PRAGMA foreign_key_list(message_processing_states)`).all() as any[];
+      const hasContactFk = Array.isArray(fkList) && fkList.some((fk) => fk.table === 'contacts');
+      if (hasContactFk) {
+        console.log('[DATABASE MIGRATION] Removing blocking foreign key from message_processing_states...');
+        this.db.exec(`
+          PRAGMA foreign_keys = OFF;
+          CREATE TABLE IF NOT EXISTS message_processing_states_v2 (
+            message_id TEXT PRIMARY KEY,
+            contact_id TEXT NOT NULL,
+            canonical_phone_id TEXT,
+            event_source TEXT NOT NULL DEFAULT 'message',
+            received_at INTEGER NOT NULL,
+            owner_seen_at INTEGER,
+            owner_replied_at INTEGER,
+            jarvis_replied_at INTEGER,
+            processed_at INTEGER,
+            status TEXT NOT NULL,
+            terminal_reason TEXT,
+            boot_session_id TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+          );
+          INSERT OR IGNORE INTO message_processing_states_v2 SELECT * FROM message_processing_states;
+          DROP TABLE message_processing_states;
+          ALTER TABLE message_processing_states_v2 RENAME TO message_processing_states;
+          CREATE INDEX IF NOT EXISTS idx_msg_state_contact_status ON message_processing_states(contact_id, status);
+          PRAGMA foreign_keys = ON;
+        `);
+        console.log('[DATABASE MIGRATION] Successfully modernized message_processing_states table.');
+      }
+    } catch (migErr) {
+      // Ignore if table does not exist yet
     }
   }
 
