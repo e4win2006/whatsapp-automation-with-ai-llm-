@@ -11,7 +11,7 @@ export interface ContactPermissions {
   viewNotifications: boolean;
   viewContacts: boolean;
   viewCalendar: boolean;
-  createReminders: boolean;       // Create reminders/tasks for Edwin
+  createReminders: boolean;       // Create reminders/tasks for the account owner
   createCalendarEvents: boolean;  // Create calendar events
   modifyCalendarEvents: boolean;  // Modify calendar events
   deleteCalendarEvents: boolean;  // Delete calendar events
