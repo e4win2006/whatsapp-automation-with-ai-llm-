@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JARVIS — WhatsApp AI Automation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-glyph">
+          <div class="glyph-core"></div>
+        </div>
+        <div class="brand-text">
+          <h2>JARVIS</h2>
+          <span>AI AUTOMATION</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">CORE</div>
+        <button class="nav-item active" data-tab="dashboard">
+          <span class="nav-icon">⌂</span> Dashboard
+        </button>
+
+        <div class="nav-section-title">WHATSAPP</div>
+        <button class="nav-item" data-tab="connection">
+          <span class="nav-icon">🔗</span> Connection
+        </button>
+        <button class="nav-item" data-tab="contacts">
+          <span class="nav-icon">👥</span> Contacts
+        </button>
+        <button class="nav-item" data-tab="conversations">
+          <span class="nav-icon">💬</span> Conversations
+        </button>
+
+        <div class="nav-section-title">SCHEDULE</div>
+        <button class="nav-item" data-tab="calendar">
+          <span class="nav-icon">📅</span> Calendar & Tasks
+        </button>
+
+        <div class="nav-section-title">SYSTEM</div>
+        <button class="nav-item" data-tab="logs">
+          <span class="nav-icon">📜</span> Activity
+        </button>
+        <button class="nav-item" data-tab="settings">
+          <span class="nav-icon">⚙️</span> Settings
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="wa-status-pill" id="sidebar-wa-pill">
+          <span class="status-indicator-dot disconnected" id="sidebar-status-dot"></span>
+          <span id="sidebar-status-label">WhatsApp Disconnected</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <h1 id="view-title">Dashboard</h1>
+        </div>
+        <div class="top-bar-right">
+          <div class="master-toggle-pill">
+            <span class="master-toggle-label">JARVIS AUTOMATION</span>
+            <label class="switch-custom">
+              <input type="checkbox" id="master-switch-toggle" checked onchange="handleMasterSwitchToggle(this.checked)">
+              <span class="slider-custom"></span>
+            </label>
+            <span class="master-state-text text-accent" id="master-state-text">ON 🟢</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="content-body">
+
+        <!-- 1. DASHBOARD TAB -->
+        <section id="pane-dashboard" class="tab-pane active">
+          <div class="simple-dash-container">
+            
+            <!-- WhatsApp Status Banner -->
+            <div class="dash-hero-card" id="dash-hero-banner">
+              <div class="hero-left">
+                <div class="hero-status-tag">
+                  <span class="status-indicator-dot disconnected" id="hero-dot"></span>
+                  <span id="hero-status-text">🔴 WhatsApp Not Connected</span>
+                </div>
+                <h2>Personal WhatsApp Automation</h2>
+                <p id="hero-subtext">Connect your WhatsApp to start letting JARVIS automatically reply to approved contacts.</p>
+              </div>
+              <button class="btn btn-primary btn-lg" id="hero-action-btn" onclick="switchTab('connection')">
+                🔗 Manage WhatsApp
+              </button>
+            </div>
+
+            <!-- Quick Contacts Overview -->
+            <div class="contacts-control-bar">
+              <div class="contacts-bar-title">
+                <h3>Automated Contacts</h3>
+                <p class="section-desc">People JARVIS is permitted to respond to.</p>
+              </div>
+              <div class="contacts-bar-actions">
+                <div class="search-input-wrapper">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="dash-contacts-search" placeholder="Search WhatsApp contacts..." oninput="handleDashContactSearch(this.value)">
+                  <button class="search-clear-btn hidden" id="dash-search-clear" onclick="clearDashContactSearch()" title="Clear search">✕</button>
+                </div>
+                <button class="btn btn-primary" onclick="openAddContactModal()">+ Add Contact</button>
+              </div>
+            </div>
+
+            <div class="contact-cards-grid" id="dash-contacts-grid">
+              <!-- Rendered via JS -->
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 2. WHATSAPP CONNECTION TAB -->
+        <section id="pane-connection" class="tab-pane">
+          <div class="connection-view-container">
+            
+            <!-- State: Disconnected -->
+            <div class="conn-box" id="conn-state-disconnected">
+              <div class="conn-icon">📱</div>
+              <h2>WhatsApp</h2>
+              <div class="status-badge-disconnected">🔴 Not Connected</div>
+              <p>Connect your personal WhatsApp account to JARVIS using the standard QR code pairing flow.</p>
+              <button class="btn btn-primary btn-lg" onclick="startWhatsAppConnection()">
+                Connect WhatsApp
+              </button>
+            </div>
+
+            <!-- State: Waiting for QR -->
+            <div class="conn-box hidden" id="conn-state-qr">
+              <h2>Scan this QR code with WhatsApp</h2>
+              <div class="qr-frame">
+                <div class="qr-canvas-holder" id="qr-canvas-holder">
+                  <div class="qr-loading-text">Generating secure pairing QR...</div>
+                </div>
+              </div>
+
+              <div class="qr-instructions">
+                <div class="qr-step">
+                  <span class="num">1</span> Open <strong>WhatsApp</strong> on your phone
+                </div>
+                <div class="qr-step">
+                  <span class="num">2</span> Tap <strong>Settings</strong> or <strong>⋮</strong> → <strong>Linked Devices</strong>
+                </div>
+                <div class="qr-step">
+                  <span class="num">3</span> Tap <strong>Link a Device</strong> and point camera here
+                </div>
+              </div>
+              <span class="text-dim" style="font-size:12px;">Waiting for connection...</span>
+            </div>
+
+            <!-- State: Connected -->
+            <div class="conn-box hidden" id="conn-state-connected">
+              <div class="status-badge-connected">🟢 WhatsApp Connected</div>
+              <h2>Your WhatsApp is ready for JARVIS.</h2>
+              <p>You can now add contacts and turn JARVIS automation ON.</p>
+              <div class="conn-account-info" id="conn-account-info-box">
+                <!-- Account details -->
+              </div>
+              <div class="conn-buttons">
+                <button class="btn btn-primary" onclick="switchTab('contacts')">View Contacts →</button>
+                <button class="btn btn-danger" onclick="disconnectWhatsApp()">Disconnect</button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 3. CONTACTS TAB -->
+        <section id="pane-contacts" class="tab-pane">
+          <div class="contacts-page-container">
+            <div class="contacts-control-bar">
+              <div class="contacts-bar-title">
+                <h2>Automated Contacts</h2>
+                <p class="section-desc"><span id="contacts-enabled-stat">0 contacts enabled</span> · People JARVIS can respond to.</p>
+              </div>
+              <button class="btn btn-primary" onclick="openAddContactModal()">+ Add Contact</button>
+            </div>
+
+            <!-- Contacts Search & Filter Toolbar -->
+            <div class="contacts-search-toolbar">
+              <div class="search-input-wrapper search-input-lg">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="contacts-search-input" placeholder="Search WhatsApp contacts..." oninput="handleContactsPageSearch(this.value)">
+                <button class="search-clear-btn hidden" id="contacts-search-clear" onclick="clearContactsPageSearch()" title="Clear search">✕</button>
+              </div>
+
+              <div class="filter-pills-group">
+                <button class="filter-pill active" data-filter="all" onclick="setContactFilter('all')">
+                  All <span class="pill-badge" id="filter-count-all">0</span>
+                </button>
+                <button class="filter-pill" data-filter="on" onclick="setContactFilter('on')">
+                  Automation ON 🟢 <span class="pill-badge" id="filter-count-on">0</span>
+                </button>
+                <button class="filter-pill" data-filter="off" onclick="setContactFilter('off')">
+                  Automation OFF ⚪ <span class="pill-badge" id="filter-count-off">0</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="search-results-summary hidden" id="contacts-search-summary">
+              <!-- Showing results for... -->
+            </div>
+
+            <div class="contact-cards-grid" id="contacts-page-grid">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. CONVERSATIONS TAB -->
+        <section id="pane-conversations" class="tab-pane">
+          <div class="chat-page-layout">
+            
+            <!-- Left Contact/Chat List -->
+            <div class="chat-sidebar">
+              <div class="chat-search">
+                <input type="text" placeholder="Search conversations..." oninput="filterConversations(this.value)">
+              </div>
+              <div class="chat-list" id="conversations-list-container">
+                <!-- List items -->
+              </div>
+            </div>
+
+            <!-- Right Message Thread -->
+            <div class="chat-thread">
+              <div class="chat-thread-header" id="chat-thread-header">
+                <div>
+                  <h3 id="active-chat-title">Select a conversation</h3>
+                  <span class="chat-sub" id="active-chat-sub"></span>
+                </div>
+                <div class="chat-header-badges-group" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <div id="active-chat-status-pill" class="chat-auto-badge" style="display:none;">
+                    Automation: <strong id="active-chat-auto-text">🟢 ON</strong>
+                  </div>
+                  <div id="active-chat-voice-in-pill" class="chat-auto-badge" style="display:none;">
+                    🎤 Voice In: <strong id="active-chat-voice-in-text">ON</strong>
+                  </div>
+                  <div id="active-chat-voice-out-pill" class="chat-auto-badge" style="display:none;">
+                    🔊 Voice Out: <strong id="active-chat-voice-out-text">OFF</strong>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" id="active-chat-settings-btn" style="display:none; padding: 4px 10px;" onclick="if(activeChatContactId) openContactSettingsModal(activeChatContactId)">
+                    ⚙️ Settings
+                  </button>
+                </div>
+              </div>
+
+              <div class="chat-messages-area" id="chat-messages-area">
+                <div class="empty-state">Select a contact to view conversation.</div>
+              </div>
+
+              <div class="chat-input-bar">
+                <input type="text" id="chat-reply-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+                <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 5. CALENDAR & TASKS TAB -->
+        <section id="pane-calendar" class="tab-pane">
+          <div class="calendar-page-container">
+            
+            <!-- Calendar & Tasks Header -->
+            <div class="calendar-header-bar">
+              <div class="calendar-header-title">
+                <h2>📅 Calendar & Tasks</h2>
+                <p class="section-desc">Personal Schedule, Contact Dates & Delegated Tasks</p>
+              </div>
+              <div class="calendar-header-actions">
+                <button class="btn btn-secondary btn-sm" onclick="openAddEventModal()">+ Add Event</button>
+                <button class="btn btn-primary btn-sm" onclick="openAddTaskModal()">+ Add Task</button>
+              </div>
+            </div>
+
+            <!-- Two-Column Layout -->
+            <div class="calendar-layout-grid">
+              
+              <!-- Left Column: Interactive Calendar -->
+              <div class="calendar-main-card">
+                <!-- Navigation & Controls -->
+                <div class="cal-nav-toolbar">
+                  <div class="cal-month-stepper">
+                    <button class="cal-nav-btn" onclick="prevMonth()" title="Previous Month">◀</button>
+                    <h3 id="cal-month-title" class="cal-current-month-heading">October 2026</h3>
+                    <button class="cal-nav-btn" onclick="nextMonth()" title="Next Month">▶</button>
+                  </div>
+                  <div class="cal-view-controls">
+                    <button class="btn btn-secondary btn-sm" onclick="goToToday()">Today</button>
+                    <div class="cal-legend">
+                      <span class="legend-item"><span class="legend-dot event-dot"></span> Event</span>
+                      <span class="legend-item"><span class="legend-dot task-dot"></span> Task</span>
+                      <span class="legend-item"><span class="legend-dot bday-dot"></span> Date / Birthday</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Calendar Grid (Mon to Sun) -->
+                <div class="cal-grid-wrapper">
+                  <div class="cal-weekdays-row">
+                    <div class="cal-weekday">Mon</div>
+                    <div class="cal-weekday">Tue</div>
+                    <div class="cal-weekday">Wed</div>
+                    <div class="cal-weekday">Thu</div>
+                    <div class="cal-weekday">Fri</div>
+                    <div class="cal-weekday">Sat</div>
+                    <div class="cal-weekday">Sun</div>
+                  </div>
+                  <div class="cal-days-grid" id="cal-days-grid">
+                    <!-- Populated dynamically by app.js -->
+                  </div>
+                </div>
+
+                <!-- Selected Date Detail Bar -->
+                <div class="cal-selected-day-details" id="cal-selected-day-box">
+                  <div class="selected-day-header">
+                    <h4 id="cal-selected-date-text">Selected: Today</h4>
+                    <span id="cal-selected-date-items-count" class="badge-dim">0 items</span>
+                  </div>
+                  <div id="cal-selected-day-items" class="selected-day-items-list">
+                    <!-- Items on this date -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Column: Dedicated Tasks & Agenda Panel -->
+              <div class="tasks-agenda-side-panel">
+                
+                <!-- Tasks Card -->
+                <div class="side-card">
+                  <div class="side-card-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 16px;">🔔</span>
+                      <h3 style="margin: 0; font-size: 15px;">Tasks & Reminders</h3>
+                    </div>
+                    <span class="task-count-badge" id="pending-tasks-count">0 pending</span>
+                  </div>
+
+                  <!-- Task Filter Tabs -->
+                  <div class="task-filter-pills">
+                    <button class="task-pill active" data-task-filter="pending" onclick="setTaskFilter('pending')">Pending</button>
+                    <button class="task-pill" data-task-filter="all" onclick="setTaskFilter('all')">All</button>
+                    <button class="task-pill" data-task-filter="completed" onclick="setTaskFilter('completed')">Completed</button>
+                    <button class="task-pill" data-task-filter="snoozed" onclick="setTaskFilter('snoozed')">Snoozed</button>
+                  </div>
+
+                  <!-- Task List Feed -->
+                  <div class="tasks-scroll-list" id="tasks-list-container">
+                    <div class="empty-state">No tasks found.</div>
+                  </div>
+                </div>
+
+                <!-- Contact Important Dates & Birthdays Card -->
+                <div class="side-card" style="margin-top: 16px;">
+                  <div class="side-card-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 16px;">🎂</span>
+                      <h3 style="margin: 0; font-size: 15px;">Important Dates</h3>
+                    </div>
+                  </div>
+                  <div class="dates-scroll-list" id="contact-dates-container">
+                    <div class="empty-state" style="padding: 12px; font-size: 12px;">No important dates recorded.</div>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 6. ACTIVITY TAB -->
+        <section id="pane-logs" class="tab-pane">
+          <div class="card-clean">
+            <div class="card-clean-header">
+              <h3>Recent Activity</h3>
+              <button class="btn btn-secondary btn-sm" onclick="loadLogs()">🔄 Refresh</button>
+            </div>
+            <div class="logs-feed" id="logs-feed-container">
+              <div class="empty-state">No activity logged yet.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. SETTINGS TAB -->
+        <section id="pane-settings" class="tab-pane">
+          <div class="card-clean" style="max-width: 650px;">
+            <div class="card-clean-header">
+              <h3>System Settings</h3>
+            </div>
+            <form onsubmit="handleSaveSettings(event)" class="simple-form">
+              <div class="form-group">
+                <label>AI Provider</label>
+                <select id="cfg-ai-provider">
+                  <option value="groq">Groq Cloud (Fast Llama 3.3)</option>
+                  <option value="lmstudio">LM Studio (Local)</option>
+                  <option value="ollama">Ollama (Local)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Groq API Key</label>
+                <input type="password" id="cfg-groq-key" placeholder="gsk_...">
+              </div>
+
+              <div class="form-group">
+                <label>Groq Model ID</label>
+                <input type="text" id="cfg-groq-model" placeholder="openai/gpt-oss-120b or llama-3.3-70b-versatile">
+              </div>
+
+              <!-- Voice & Speech Configuration -->
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 16px; margin: 16px 0;">
+                <h4 style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                  <span>🎙️ Voice & Audio Settings</span>
+                  <span style="font-size: 10px; background: rgba(56,189,248,0.15); color: var(--accent); padding: 1px 6px; border-radius: 4px; font-family: var(--font-mono);">STT & TTS</span>
+                </h4>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-size: 12px;">Speech-to-Text Model</label>
+                    <select id="cfg-stt-provider">
+                      <option value="groq_whisper" selected>Groq Whisper (whisper-large-v3-turbo)</option>
+                      <option value="gemini_audio">Gemini Multimodal Audio</option>
+                      <option value="mock">Simulated / Auto-Detect</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-size: 12px;">Speech Recognition Language</label>
+                    <select id="cfg-stt-lang">
+                      <option value="auto" selected>Automatic Multilingual (Malayalam / English / Hindi / etc.)</option>
+                      <option value="ml">Malayalam (മലയാളം)</option>
+                      <option value="en">English</option>
+                      <option value="hi">Hindi (हिन्दी)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-size: 12px;">Voice Output Model (TTS)</label>
+                    <select id="cfg-tts-voice">
+                      <option value="default" selected>Google Neural TTS (Multilingual)</option>
+                      <option value="natural_male">Natural Assistant Voice (Male)</option>
+                      <option value="natural_female">Natural Assistant Voice (Female)</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-size: 12px;">Default Speech Output Format</label>
+                    <select id="cfg-tts-format">
+                      <option value="ogg_opus" selected>WhatsApp Voice Message (OGG / Opus PTT)</option>
+                      <option value="mp3">Audio File (MP3)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Default Response Delay</label>
+                <select id="cfg-delay-select">
+                  <option value="60">1 minute</option>
+                  <option value="120">2 minutes</option>
+                  <option value="180" selected>3 minutes</option>
+                  <option value="300">5 minutes</option>
+                  <option value="600">10 minutes</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Wake Word Phrases</label>
+                <input type="text" id="cfg-wake-phrases" value="Hey Jarvis,Hi Jarvis,Hello Jarvis,Jarvis">
+              </div>
+
+              <div class="form-group">
+                <label>System Personality Prompt</label>
+                <textarea id="cfg-system-prompt" rows="4"></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Save Settings</button>
+            </form>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: ADD CONTACT -->
+  <div class="modal-overlay hidden" id="modal-add-contact">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 id="add-modal-title">Add WhatsApp Contact</h3>
+        <button class="modal-x" onclick="closeAddContactModal()">✕</button>
+      </div>
+
+      <!-- Selection View -->
+      <div class="modal-content" id="add-modal-body-select">
+        <div class="search-input-wrapper search-box-modal" style="margin-bottom: 12px;">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="add-contact-search" placeholder="Search WhatsApp contacts..." oninput="filterAvailableContacts(this.value)">
+          <button class="search-clear-btn hidden" id="add-contact-search-clear" onclick="clearAvailableContactsSearch()" title="Clear search">✕</button>
+        </div>
+
+        <div class="modal-section-label" id="recent-chats-header" style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+          Recent WhatsApp Chats
+        </div>
+
+        <div class="available-contacts-list" id="available-contacts-list">
+          <div class="empty-state">Loading WhatsApp contacts...</div>
+        </div>
+
+        <div class="or-manual-divider">
+          <span>OR ADD BY NUMBER</span>
+        </div>
+
+        <div class="manual-add-row">
+          <input type="text" id="manual-contact-phone" placeholder="Phone number (e.g. 910000000001)">
+          <input type="text" id="manual-contact-name" placeholder="Name">
+        </div>
+      </div>
+
+      <!-- Confirmation Step: When user selects a contact -->
+      <div class="modal-content hidden" id="add-modal-body-confirm">
+        <div class="confirm-enable-box" style="text-align: center; padding: 24px 12px;">
+          <div style="font-size: 38px; margin-bottom: 12px;">👤</div>
+          <h3 id="confirm-contact-name" style="font-size: 18px; margin-bottom: 8px; color: #fff;">Selected Contact</h3>
+          <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 24px;">
+            Allow JARVIS to automate this conversation?
+          </p>
+          <div style="display: flex; gap: 12px; justify-content: center;">
+            <button class="btn btn-secondary" onclick="backToSelectModal()" style="min-width: 100px;">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmAddContactWithAutomation(true)" style="min-width: 110px;">Enable</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-foot" id="add-modal-foot-default">
+        <button class="btn btn-secondary" onclick="closeAddContactModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="handleAddContactSubmit()">Add Contact</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONTACT SETTINGS -->
+  <div class="modal-overlay hidden" id="modal-contact-settings">
+    <div class="modal-box" style="max-width: 620px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-head">
+        <h3 id="cset-modal-title">👤 Contact Settings</h3>
+        <button class="modal-x" onclick="closeContactSettingsModal()">✕</button>
+      </div>
+      <div class="modal-content">
+        
+        <!-- Top Info Header & Core Toggles -->
+        <div class="cset-contact-info-header" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div>
+              <div style="font-weight: 700; font-size: 16px; color: #fff;" id="cset-display-name">Contact Name</div>
+              <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;" id="cset-phone-display">+91 XXXXX XXXXX</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Automation</div>
+              <button class="toggle-pill-btn on" id="cset-auto-btn" onclick="toggleContactSettingsAutomation()" style="font-size: 13px;">
+                🟢 ON
+              </button>
+            </div>
+          </div>
+
+          <!-- Independent Voice Toggles -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+              <div>
+                <div style="font-size: 12px; font-weight: 600; color: #fff;">🎤 Voice Messages</div>
+                <div style="font-size: 10px; color: var(--text-muted);">Process audio input</div>
+              </div>
+              <button class="toggle-pill-btn off" id="cset-voice-msg-btn" onclick="toggleContactVoiceMessageSetting()" style="font-size: 11px; padding: 3px 8px;">
+                ⚪ OFF
+              </button>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+              <div>
+                <div style="font-size: 12px; font-weight: 600; color: #fff;">🔊 Voice Response</div>
+                <div style="font-size: 10px; color: var(--text-muted);">Reply with speech</div>
+              </div>
+              <button class="toggle-pill-btn off" id="cset-voice-resp-btn" onclick="toggleContactVoiceResponseSetting()" style="font-size: 11px; padding: 3px 8px;">
+                ⚪ OFF
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Relationship & Dates -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Relationship</label>
+            <input type="text" id="cset-relationship" placeholder="e.g. father, brother, friend" style="font-size: 13px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Birthday (MM/DD)</label>
+            <input type="text" id="cset-birthday" placeholder="e.g. 01/15" style="font-size: 13px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Anniversary (MM/DD)</label>
+            <input type="text" id="cset-anniversary" placeholder="e.g. 05/20" style="font-size: 13px;">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Important Dates & Custom Milestones</label>
+          <input type="text" id="cset-important-dates" placeholder="e.g. College convocation on July 10; Joining date Aug 1" style="font-size: 13px;">
+        </div>
+
+        <div class="form-group">
+          <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Description & Instructions (Controlled by Owner)</label>
+          <textarea id="cset-description" rows="2" placeholder="e.g. College friend. Casual conversation. Keep responses friendly and short."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Birthday Greeting Message</label>
+          <input type="text" id="cset-birthday-msg" placeholder="e.g. Happy Birthday 🎂❤️ (Sent every year at 09:00 AM)" style="font-size: 13px;">
+        </div>
+
+        <!-- Privacy & Calendar/Task Permissions -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+            🛡️ Privacy & Access Permissions
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
+            Grant specific access to owner's private information. Fail-closed: unauthorized requests are strictly refused without confirming data presence.
+          </p>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="perm-use-jarvis" checked>
+              <span>Use JARVIS (AI Chat)</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="perm-view-messages">
+              <span>View Messages</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="perm-view-notifications">
+              <span>View Notifications</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="perm-view-contacts">
+              <span>View Contacts</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="perm-view-calendar">
+              <span>View Calendar / Schedule</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px; font-weight: 600; color: var(--accent);">
+              <input type="checkbox" id="perm-create-reminders">
+              <span>Create Reminders/Tasks for Owner</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="perm-create-calendar-events">
+              <span>Create Calendar Events</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="perm-modify-calendar-events">
+              <span>Modify Calendar Events</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="perm-delete-calendar-events">
+              <span>Delete Calendar Events</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="perm-view-files">
+              <span>View Files</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="perm-view-location">
+              <span>View Location</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="perm-view-personal-info">
+              <span>View Personal Info</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Per-Contact AI Capabilities -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 700; color: #60a5fa; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+            ⚡ AI Capabilities (Controlled Per Contact)
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
+            Control what tasks JARVIS is allowed to perform for this contact. Restricted requests are rejected before calling AI.
+          </p>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="cap-chat" checked>
+              <span>Chat & Conversation</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="cap-general-ai" checked>
+              <span>General AI / Info</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px; font-weight: 600; color: #f59e0b;">
+              <input type="checkbox" id="cap-coding">
+              <span>Coding & Programming Help</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="cap-translation" checked>
+              <span>Translation</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="cap-summarization" checked>
+              <span>Summarization</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="cap-web-search">
+              <span>Web Search</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="cap-voice" checked>
+              <span>Voice Processing</span>
+            </label>
+            <label class="checkbox-row" style="font-size: 12px;">
+              <input type="checkbox" id="cap-routines" checked>
+              <span>Routines & Reminders</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Automation Parameters -->
+        <div class="cset-options-list" style="margin-bottom: 16px;">
+          <label class="checkbox-row">
+            <input type="checkbox" id="cset-wake-only" checked>
+            <span>Respond when I say "Jarvis"</span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="cset-memory" checked>
+            <span>Remember this conversation</span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="cset-normal-msgs">
+            <span>Automatically respond to normal messages</span>
+          </label>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Response Delay</label>
+          <select id="cset-delay">
+            <option value="60">1 minute</option>
+            <option value="120">2 minutes</option>
+            <option value="180">3 minutes</option>
+            <option value="300">5 minutes</option>
+            <option value="600">10 minutes</option>
+          </select>
+        </div>
+
+        <!-- Scheduled Routines Section -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px;">
+              ⏰ Scheduled Routines
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="openAddRoutineModal()" style="font-size: 11px; padding: 3px 8px;">
+              + Add Routine
+            </button>
+          </div>
+          
+          <div id="cset-routines-list" style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 8px;">No scheduled routines for this contact.</div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-foot" style="justify-content: space-between;">
+        <button class="btn btn-danger btn-sm" onclick="handleDeleteCurrentContact()">🗑️ Remove Contact</button>
+        <button class="btn btn-primary" onclick="handleSaveContactSettings()">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT ROUTINE -->
+  <div class="modal-overlay hidden" id="modal-routine-edit">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-head">
+        <h3 id="routine-modal-title">Add Scheduled Routine</h3>
+        <button class="modal-x" onclick="closeRoutineModal()">✕</button>
+      </div>
+      <div class="modal-content">
+        <div class="form-group">
+          <label>Routine Name</label>
+          <input type="text" id="routine-name" placeholder="e.g. Daily Good Morning">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Repeat Type</label>
+            <select id="routine-type" onchange="handleRoutineTypeChange(this.value)">
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+              <option value="specific_date">Specific Date</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Time (HH:MM 24-hr)</label>
+            <input type="time" id="routine-time" value="08:00">
+          </div>
+        </div>
+
+        <!-- Weekly Days Selector -->
+        <div class="form-group hidden" id="routine-weekly-group">
+          <label>Days of Week</label>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <label class="checkbox-row" style="font-size: 11px;"><input type="checkbox" name="routine-day" value="1" checked> Mon</label>
+            <label class="checkbox-row" style="font-size: 11px;"><input type="checkbox" name="routine-day" value="2"> Tue</label>
+            <label class="checkbox-row" style="font-size: 11px;"><input type="checkbox" name="routine-day" value="3"> Wed</label>
+            <label class="checkbox-row" style="font-size: 11px;"><input type="checkbox" name="routine-day" value="4"> Thu</label>
+            <label class="checkbox-row" style="font-size: 11px;"><input type="checkbox" name="routine-day" value="5"> Fri</label>
+            <label class="checkbox-row" style="font-size: 11px;"><input type="checkbox" name="routine-day" value="6"> Sat</label>
+            <label class="checkbox-row" style="font-size: 11px;"><input type="checkbox" name="routine-day" value="0"> Sun</label>
+          </div>
+        </div>
+
+        <!-- Monthly Day Selector -->
+        <div class="form-group hidden" id="routine-monthly-group">
+          <label>Day of Month (1-31)</label>
+          <input type="number" id="routine-day-of-month" min="1" max="31" value="1">
+        </div>
+
+        <!-- Yearly Month & Day Selector -->
+        <div class="form-group hidden" id="routine-yearly-group">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div>
+              <label>Month (1-12)</label>
+              <input type="number" id="routine-yearly-month" min="1" max="12" value="1">
+            </div>
+            <div>
+              <label>Day (1-31)</label>
+              <input type="number" id="routine-yearly-day" min="1" max="31" value="1">
+            </div>
+          </div>
+        </div>
+
+        <!-- Specific Date Selector -->
+        <div class="form-group hidden" id="routine-date-group">
+          <label>Specific Date (YYYY-MM-DD)</label>
+          <input type="date" id="routine-specific-date">
+        </div>
+
+        <div class="form-group">
+          <label>Message Content (Supports English, Malayalam, Russian, Chinese & Emoji)</label>
+          <textarea id="routine-message" rows="3" placeholder="e.g. Good morning ☀️ / സുപ്രഭാതം ❤️"></textarea>
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="routine-enabled" checked>
+          <span>Enable this routine</span>
+        </label>
+      </div>
+
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeRoutineModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="handleSaveRoutine()">Save Routine</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT TASK -->
+  <div class="modal-overlay hidden" id="modal-task-edit">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-head">
+        <h3 id="task-modal-title">🔔 Add Task & Reminder</h3>
+        <button class="modal-x" onclick="closeTaskModal()">✕</button>
+      </div>
+      <div class="modal-content">
+        <div class="form-group">
+          <label>Task Title *</label>
+          <input type="text" id="task-input-title" placeholder="e.g. Team meeting / Submit project report">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" id="task-input-date">
+          </div>
+          <div class="form-group">
+            <label>Due Time</label>
+            <input type="time" id="task-input-time" value="18:00">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Requester (Contact or Owner)</label>
+          <select id="task-input-requester">
+            <option value="Owner" selected>Owner (Self)</option>
+            <!-- Contacts loaded dynamically -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Description / Notes</label>
+          <textarea id="task-input-desc" rows="2" placeholder="e.g. Remind to discuss the project report"></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="handleSaveTask()">Save Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT CALENDAR EVENT -->
+  <div class="modal-overlay hidden" id="modal-event-edit">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-head">
+        <h3 id="event-modal-title">📅 Add Calendar Event</h3>
+        <button class="modal-x" onclick="closeEventModal()">✕</button>
+      </div>
+      <div class="modal-content">
+        <div class="form-group">
+          <label>Event Title *</label>
+          <input type="text" id="event-input-title" placeholder="e.g. Doctor appointment / Team Sync">
+        </div>
+
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" id="event-input-date">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Start Time</label>
+            <input type="time" id="event-input-start" value="10:00">
+          </div>
+          <div class="form-group">
+            <label>End Time</label>
+            <input type="time" id="event-input-end" value="11:00">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" id="event-input-location" placeholder="e.g. Clinic / Google Meet / Campus">
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="event-input-desc" rows="2" placeholder="e.g. Bring test reports and prescription"></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeEventModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="handleSaveEvent()">Save Event</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+.cache/
+
+# Databases & Runtime Data
+data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+database/
+rag/
+chroma/
+embeddings/
+memory/
+
+# Environment & Credentials
+.env
+.env.*
+!.env.example
+credentials/
+secrets/
+*.pem
+*.key
+*.cert
+*.p12
+
+# WhatsApp Web & Browser Sessions
+.wwebjs_auth/
+.wwebjs_cache/
+session/
+sessions/
+auth/
+cache/
+
+# Logs & PIDs
+logs/
+*.log
+*.pid
+npm-debug.log*
+yarn-debug.log*
+
+# Temporary files & OS metadata
+tmp/
+temp/
+.DS_Store
+Thumbs.db
+
