@@ -35,6 +35,15 @@ export class GeminiProvider implements IAiProvider {
       contactMeta.push(`Contact Notes / Guidance: ${request.description}`);
     }
 
+    let memoryStatusBlock = '';
+    if (request.memoryEvidence) {
+      if (request.memoryEvidence.status === 'CONFIRMED') {
+        memoryStatusBlock = `[MEMORY STATUS: CONFIRMED]\nVerified conversation memory was found. You may refer to the retrieved memory.\n\n`;
+      } else if (request.memoryEvidence.status === 'UNKNOWN') {
+        memoryStatusBlock = `[MEMORY STATUS: UNKNOWN]\nNo verified conversation memory evidence was found for this query. You MUST NOT pretend to remember or manufacture a topic. Ask the user naturally for clarification.\n\n`;
+      }
+    }
+
     const userPrompt = `Contact Information:
 Name: "${request.contactName}" (ID: ${request.contactId})
 ${contactMeta.join('\n')}
@@ -42,7 +51,7 @@ ${contactMeta.join('\n')}
 Incoming message(s):
 ${formattedMessages}
 
-${request.conversationContext ? `Recent conversation context:\n${request.conversationContext}\n\n` : ''}Please provide a concise, natural, and helpful WhatsApp reply as JARVIS adhering to the above contact rules.`;
+${memoryStatusBlock}${request.ragContext ? `${request.ragContext}\n\n` : ''}${request.conversationContext ? `Recent conversation context:\n${request.conversationContext}\n\n` : ''}Please provide a concise, natural, and helpful WhatsApp reply as JARVIS adhering to the above contact rules.`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);

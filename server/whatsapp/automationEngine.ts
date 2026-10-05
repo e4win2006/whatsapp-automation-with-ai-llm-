@@ -10,6 +10,7 @@ import { PrivacyGuard } from './privacyGuard';
 import { voiceService } from '../voice/voiceService';
 import { TaskManager } from './taskManager';
 import { CapabilityGuard } from './capabilityGuard';
+import { MemoryGuard } from './memoryGuard';
 import { ragManager, RagManager } from '../ai/ragManager';
 
 interface ActiveTimer {
@@ -848,18 +849,56 @@ AI_CALLED = YES
 `);
 
     console.log(`[JARVIS AUTOMATION] Sending message to AI...`);
-    const aiProvider = getAiProvider();
+    const aiProvider = getAiProvider(this.database.getSetting('ai_provider') || undefined);
     console.log(`[JARVIS AI] Provider: ${aiProvider.providerName.toUpperCase()}`);
     console.log(`[JARVIS AI] Generating response for: ${JSON.stringify(messageTexts)}...`);
 
     // 5. Retrieve isolated conversation history & Per-Contact RAG Context
     const useMemory = contact?.memory_enabled !== 0;
     const conversationContext = useMemory ? this.conversations.getFormattedHistory(contactId, 6) : undefined;
+    const combinedQuery = messageTexts.join(' ');
     
-    // Semantic / Keyword RAG retrieval for older context
-    const ragResult = (contact?.rag_enabled !== 0 && useMemory)
-      ? this.rag.retrieveContext(contactId, messageTexts.join(' '), 3)
-      : { relevantChunks: [], retrievalMetadata: null, formattedContext: '' };
+    // Memory Intent Classification & Decision
+    const intentInfo = this.rag.classifyMemoryIntent(combinedQuery);
+    console.log(`\n[MEMORY DECISION] needed: ${intentInfo.isMemoryRecall} | reason: ${intentInfo.reason} | hint: ${intentInfo.temporalHint || 'none'}`);
+
+    // Adaptive Semantic / Keyword RAG retrieval for older context with Evidence Gate
+    const ragEnabled = Boolean(contact?.rag_enabled !== 0 && useMemory);
+    const ragResult = ragEnabled
+      ? this.rag.retrieveContext(contactId, combinedQuery, 8)
+      : {
+          relevantChunks: [],
+          retrievalMetadata: null,
+          formattedContext: '',
+          memoryEvidence: {
+            available: false,
+            relevant: false,
+            status: 'NO_MEMORY_NEEDED' as const,
+            confidence: 0,
+            resultCount: 0,
+            relevantResultCount: 0,
+            bestSimilarity: 0,
+            generationPolicy: 'NORMAL' as const,
+            contextIds: []
+          }
+        };
+
+    console.log(`\n[RAG TRACE]
+requestId: rag_${aiRequestId}
+contactId: ${contactId}
+conversationId: ${conversationId}
+approvedForJarvis: true
+ragEnabled: ${ragEnabled}
+memoryIntent: ${intentInfo.isMemoryRecall ? 'RECALL_PREVIOUS_CONVERSATION' : 'GENERAL'}
+temporalHint: ${intentInfo.temporalHint || 'NONE'}
+resultCount: ${ragResult.memoryEvidence.resultCount}
+relevantResultCount: ${ragResult.memoryEvidence.relevantResultCount}
+contextInjected: ${Boolean(ragResult.formattedContext)}
+memoryEvidence:
+  status: ${ragResult.memoryEvidence.status}
+  confidence: ${ragResult.memoryEvidence.confidence}
+  contextIds: ${JSON.stringify(ragResult.memoryEvidence.contextIds)}
+`);
 
     if (ragResult.formattedContext) {
       this.database.addTimelineEvent({
@@ -878,14 +917,24 @@ AI_CALLED = YES
         messages: messageTexts,
         conversationContext,
         ragContext: ragResult.formattedContext || undefined,
+        memoryEvidence: ragResult.memoryEvidence,
         relationship: contact?.relationship || null,
         description: contact?.description || null,
         systemPrompt: contact?.custom_system_prompt || undefined,
         triggerType
       });
 
-      // Post-AI Output Guard
-      const validated = PrivacyGuard.validatePostAiOutput(aiResult.reply, contact);
+      // Post-AI Memory Claim Guard
+      const memGuardResult = MemoryGuard.validatePostAiMemoryClaims(
+        aiResult.reply,
+        ragResult.memoryEvidence,
+        combinedQuery
+      );
+
+      console.log(`\n[OUTPUT GUARD] claimDetected: ${memGuardResult.claimDetected} | claimSupported: ${memGuardResult.claimSupported} | action: ${memGuardResult.action}\n`);
+
+      // Post-AI Privacy Output Guard
+      const validated = PrivacyGuard.validatePostAiOutput(memGuardResult.filteredReply, contact);
       const replyText = validated.filteredReply;
 
       console.log(`[JARVIS AI] Response generated: "${replyText}" (Latency: ${aiResult.latencyMs}ms)`);

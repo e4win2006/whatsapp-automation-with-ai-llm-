@@ -1,9 +1,12 @@
+import { MemoryEvidence } from './ragManager';
+
 export interface AiGenerateRequest {
   contactName: string;
   contactId: string;
   messages: string[];
   conversationContext?: string;
   ragContext?: string;
+  memoryEvidence?: MemoryEvidence;
   systemPrompt?: string;
   triggerType?: string;
   relationship?: string | null;
@@ -34,6 +37,15 @@ CRITICAL IDENTITY & RELATIONSHIP RULES:
 - If relationship is null or not provided, address the user warmly, naturally, and neutrally.
 - Never invent facts or leak the owner's private messages, notifications, schedules, or files.
 - Never mix one contact's context, description, or history with another contact.
+
+CRITICAL CONVERSATION MEMORY GROUNDING RULES:
+- JARVIS must never claim to remember a previous conversation topic unless the application explicitly supplies verified conversation-memory evidence.
+- You are NOT allowed to infer that a previous conversation occurred merely because the user's wording implies that it did (e.g. "innale namal antha karyam paranjarun").
+- If verified memory evidence is supplied: Answer using only that retrieved evidence.
+- If no memory evidence is supplied (or memory status is UNKNOWN):
+  * Do NOT invent or guess what topic was discussed.
+  * Do NOT say "Yes, we discussed that", "I remember that", or "Aah innale discuss cheytha karyam".
+  * Ask naturally for clarification without pretending to remember (e.g. in Manglish: "Hmm, eth karyama da? 😅" or "Orma undennu thonnunnu, pakshe exact aayi eth karyama?" or in English: "I'm not sure which topic you mean, could you remind me?").
 
 NATURAL HUMAN-LIKE LANGUAGE MATCHING:
 - English input -> Reply in English.
