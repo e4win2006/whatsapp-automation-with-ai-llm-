@@ -349,7 +349,7 @@ dedupeResult: PROCESSED_FIRST_TIME
 
         console.log(`\n[VOICE]\ncontactId: ${resolvedContact!.id}\nmessageId: ${messageId}\nduration: ${msg.audioDuration || 'unknown'}\ntranscription started: ${new Date().toISOString()}\n`);
 
-        let audioBase64: string | undefined = typeof msg.audioData === 'string' ? msg.audioData : (msg.audioData as any)?.data;
+        let audioBase64: string | undefined = msg.audioBase64 || (typeof msg.audioData === 'string' ? msg.audioData : (msg.audioData as any)?.data);
         let mimetype = msg.mimetype || (typeof msg.audioData === 'object' ? (msg.audioData as any)?.mimetype : undefined) || 'audio/ogg; codecs=opus';
         if (!audioBase64 && typeof msg.downloadMedia === 'function') {
           try {

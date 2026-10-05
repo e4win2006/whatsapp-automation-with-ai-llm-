@@ -14,7 +14,7 @@ async function testGroq() {
         reply: `Mock reply for: ${req.messages.join(' ')}`,
         provider: 'groq',
         model: 'llama-3.3-70b-versatile',
-        durationMs: 35
+        latencyMs: 35
       };
     }
   }

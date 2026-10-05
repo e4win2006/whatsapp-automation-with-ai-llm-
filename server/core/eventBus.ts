@@ -15,6 +15,7 @@ export interface WhatsAppMessagePayload {
   messageType?: 'text' | 'voice' | 'ptt' | 'audio' | 'image' | 'document';
   audioDuration?: number;
   audioData?: string;
+  audioBase64?: string;
   audioBuffer?: Buffer;
   mimetype?: string;
   hasMedia?: boolean;

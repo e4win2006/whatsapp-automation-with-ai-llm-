@@ -22,7 +22,7 @@ async function testGeminiProvider() {
         reply: req.messages[0].includes('capital') ? 'The capital of France is Paris.' : 'Hello! I am JARVIS, ready to assist.',
         provider: 'gemini',
         model: 'gemini-1.5-flash',
-        durationMs: 40
+        latencyMs: 40
       };
     }
   }

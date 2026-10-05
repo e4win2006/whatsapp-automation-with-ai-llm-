@@ -20,7 +20,7 @@ async function testFailover() {
         reply: '20',
         provider: 'groq',
         model: 'llama-3.3-70b-versatile',
-        durationMs: 45
+        latencyMs: 45
       };
     }
   }
@@ -54,7 +54,7 @@ async function testFailover() {
         reply: 'Recursion is a technique where a function calls itself.',
         provider: 'gemini',
         model: 'gemini-1.5-flash',
-        durationMs: 60
+        latencyMs: 60
       };
     }
   }
