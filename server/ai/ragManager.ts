@@ -459,6 +459,13 @@ export class RagManager {
   }
 
   /**
+   * Delete all RAG memories across all contacts
+   */
+  public clearAllMemory(): number {
+    return this.database.clearAllContactMemory();
+  }
+
+  /**
    * Set RAG enabled status and namespace state for contact
    */
   public setRagStatus(contactId: string, enabled: boolean, namespaceStatus: 'active' | 'disabled' | 'deleted' = 'active'): void {

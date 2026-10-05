@@ -15,7 +15,7 @@ data/
 *.sqlite3
 *.sqlite-wal
 *.sqlite-shm
-database/
+/database/
 rag/
 chroma/
 embeddings/

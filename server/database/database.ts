@@ -2194,6 +2194,12 @@ export class JarvisDatabase {
     return res?.changes || 0;
   }
 
+  public clearAllContactMemory(): number {
+    const stmt = this.db.prepare('DELETE FROM contact_memory_chunks');
+    const res = stmt.run() as any;
+    return res?.changes || 0;
+  }
+
   public getContactMemoryCount(contactId: string): number {
     const stmt = this.db.prepare('SELECT COUNT(*) as count FROM contact_memory_chunks WHERE contact_id = ?');
     const row = stmt.get(contactId) as { count: number } | undefined;
