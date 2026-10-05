@@ -166,7 +166,9 @@ export class RagManager {
     }
 
     const tokens = this.tokenize(content);
-    const chunkId = `rag_${contactId}_${messageId}_${Date.now()}`;
+    const safeContact = contactId.replace(/[^a-zA-Z0-9]/g, '_');
+    const safeMsgId = (messageId || `${timestamp}`).replace(/[^a-zA-Z0-9]/g, '_');
+    const chunkId = `rag_${safeContact}_${safeMsgId}`;
 
     this.database.saveContactMemoryChunk({
       id: chunkId,
@@ -181,6 +183,45 @@ export class RagManager {
     });
 
     return true;
+  }
+
+  /**
+   * Index historical messages from database for contacts.
+   * Defaults to messages from the past 3 days (or since specified timestamp).
+   */
+  public indexHistoricalMessages(sinceTimestamp?: number): { indexed: number; contactsCount: number } {
+    const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+    const cutoff = sinceTimestamp !== undefined ? sinceTimestamp : threeDaysAgo;
+
+    const messages = this.database.getHistoricalMessagesForRag(cutoff);
+    let indexedCount = 0;
+    const affectedContacts = new Set<string>();
+
+    for (const msg of messages) {
+      const contactId = msg.contact_id;
+      const contact = this.database.getContact(contactId);
+      if (!contact) continue;
+
+      // Ensure contact RAG status is active
+      if (contact.is_approved !== 1 || contact.rag_enabled !== 1) {
+        this.database.updateContactRagStatus(contactId, true, 'active');
+      }
+
+      const success = this.indexMessage(
+        contactId,
+        msg.id,
+        msg.direction,
+        msg.message_text,
+        msg.timestamp
+      );
+
+      if (success) {
+        indexedCount++;
+        affectedContacts.add(contactId);
+      }
+    }
+
+    return { indexed: indexedCount, contactsCount: affectedContacts.size };
   }
 
   /**

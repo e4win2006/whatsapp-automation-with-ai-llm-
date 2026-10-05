@@ -1856,6 +1856,22 @@ export class JarvisDatabase {
     stmt.run(contactId);
   }
 
+  public getHistoricalMessagesForRag(sinceTimestamp: number = 0): DbMessage[] {
+    const stmt = this.db.prepare(`
+      SELECT * FROM messages
+      WHERE timestamp >= ?
+        AND message_text IS NOT NULL
+        AND TRIM(message_text) != ''
+        AND contact_id NOT LIKE '%@newsletter'
+        AND contact_id NOT LIKE '%@broadcast'
+        AND contact_id NOT LIKE '%@g.us'
+        AND contact_id != 'status@broadcast'
+        AND contact_id != '0@c.us'
+      ORDER BY timestamp ASC
+    `);
+    return stmt.all(sinceTimestamp) as unknown as DbMessage[];
+  }
+
   // --- AI Drafts ---
   public saveAiDraft(draft: {
     id: string;
